@@ -1,6 +1,8 @@
 #!/bin/bash
+set -e
+
 # expand alias
-docker login
+# docker login
 shopt -s expand_aliases
 
 # Install local requirements
@@ -8,11 +10,12 @@ pip3 install -r requirements.txt
 
 # Network airflow_summit_network declared as external, but could not be found.
 # Please create the network manually using `docker network create airflow_summit_network` and try again.
-
-
 docker network create -d bridge airflow_summit_network
 
 # configure octavia in the script
+
+# TODO lets move these files into the repo, no need to put them at HOME
+
 OCTAVIA_ENV_FILE=${HOME}/.octavia
 DBT_PROFILE_FILE=${HOME}/.dbt/profiles.yaml
 alias octavia='docker run -i --rm -v $(pwd):/home/octavia-project --network airflow_summit_network --env-file ${OCTAVIA_ENV_FILE} --user $(id -u):$(id -g) airbyte/octavia-cli:0.39.0-alpha --airbyte-url http://airbyte-server:8001'
@@ -24,13 +27,20 @@ rm -rf airbyte/*/*/state.yaml
 docker run --name dest --network airflow_summit_network -e POSTGRES_USER=demo_user -e POSTGRES_PASSWORD=password -p 5432:5432 -d postgres:10
 
 cd airflow
+# TODO could just mount this into the final container, no need to docker build it in
 cp ${DBT_PROFILE_FILE} dbt/profiles.yml
 docker build . -t airflow-airbyte:1.0.0
-rm -f dbt/profiles.yml
+# rm -f dbt/profiles.yml
 cd ..
+
+# hack bc on older version of docker which doesnt support .env files
+export $(cat airflow/.env | xargs)
 docker-compose -f airflow/docker-compose.yaml up -d airflow-init
 docker-compose -f airflow/docker-compose.yaml up -d
 docker exec airflow-webserver airflow connections add 'airbyte_default' --conn-uri 'http://airbyte-server:8001'
+
+# hack bc on older version of docker which doesnt support .env files
+export $(cat airbyte/.env | xargs)
 docker-compose -f airbyte/docker-compose.yaml up -d
 
 echo "wait airbyte to be ready..."
@@ -40,6 +50,9 @@ cd airbyte
 octavia init
 octavia apply -f sources/fake_users/configuration.yaml
 octavia apply -f destinations/postgres_destination/configuration.yaml
+
+# TODO could we use a python3 container w pyyaml installed here?
+
 cd ..; python3 tools/change_resource_id.py; cd airbyte
 octavia apply -f connections/demo_connection/configuration.yaml
 

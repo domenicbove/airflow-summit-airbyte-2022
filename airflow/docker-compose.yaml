@@ -39,41 +39,41 @@
 # Feel free to modify this file to suit your needs.
 ---
 version: '3'
-x-airflow-common:
-  &airflow-common
-  # In order to add custom dependencies or upgrade provider packages you can use your extended image.
-  # Comment the image line, place your Dockerfile in the directory where you placed the docker-compose.yaml
-  # and uncomment the "build" line below, Then run `docker-compose build` to build the images.
-  image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.3.0}
-  # build: .
-  environment:
-    &airflow-common-env
-    AIRFLOW__CORE__EXECUTOR: CeleryExecutor
-    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
-    # For backward compatibility, with Airflow <2.3
-    AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
-    AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
-    AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
-    AIRFLOW__CORE__FERNET_KEY: ''
-    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
-    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
-    AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth'
-    _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
-  volumes:
-    - ./dags:/opt/airflow/dags
-    - ./logs:/opt/airflow/logs
-    - ./plugins:/opt/airflow/plugins
-  user: "${AIRFLOW_UID:-50000}:0"
-  depends_on:
-    &airflow-common-depends-on
-    redis:
-      condition: service_healthy
-    postgres:
-      condition: service_healthy
+# x-airflow-common:
+#   &airflow-common
+#   # In order to add custom dependencies or upgrade provider packages you can use your extended image.
+#   # Comment the image line, place your Dockerfile in the directory where you placed the docker-compose.yaml
+#   # and uncomment the "build" line below, Then run `docker-compose build` to build the images.
+#   image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.3.0}
+#   # build: .
+#   environment:
+#     # &airflow-common-env
+#     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+#     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+#     # For backward compatibility, with Airflow <2.3
+#     AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+#     AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
+#     AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
+#     AIRFLOW__CORE__FERNET_KEY: ''
+#     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+#     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+#     AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth'
+#     _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
+#   volumes:
+#     - ./dags:/opt/airflow/dags
+#     - ./logs:/opt/airflow/logs
+#     - ./plugins:/opt/airflow/plugins
+#   user: "${AIRFLOW_UID:-50000}:0"
+#   depends_on:
+#     # &airflow-common-depends-on
+#     redis:
+#       condition: service_healthy
+#     postgres:
+#       condition: service_healthy
 
 services:
   postgres:
-    image: postgres:13
+    image: postgres:10 #13
     networks:
     - airflow_summit_network
     container_name: airflow-pg
@@ -104,7 +104,24 @@ services:
     restart: always
 
   airflow-webserver:
-    <<: *airflow-common
+    # <<: *airflow-common
+    image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.3.0}
+    environment:
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
+      AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
+      AIRFLOW__CORE__FERNET_KEY: ''
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth'
+      _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+    user: "${AIRFLOW_UID:-50000}:0"
     command: webserver
     networks:
     - airflow_summit_network
@@ -118,12 +135,36 @@ services:
       retries: 5
     restart: always
     depends_on:
-      <<: *airflow-common-depends-on
-      airflow-init:
-        condition: service_completed_successfully
+      - redis
+      - postgres
+      - airflow-init
+      # <<: *airflow-common-depends-on
+      # redis:
+      #   condition: service_healthy
+      # postgres:
+      #   condition: service_healthy
+      # airflow-init:
+      #   condition: service_completed_successfully
 
   airflow-scheduler:
-    <<: *airflow-common
+    # <<: *airflow-common
+    image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.3.0}
+    environment:
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
+      AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
+      AIRFLOW__CORE__FERNET_KEY: ''
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth'
+      _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+    user: "${AIRFLOW_UID:-50000}:0"
     command: scheduler
     networks:
     - airflow_summit_network
@@ -135,12 +176,25 @@ services:
       retries: 5
     restart: always
     depends_on:
-      <<: *airflow-common-depends-on
-      airflow-init:
-        condition: service_completed_successfully
+      - redis
+      - postgres
+      - airflow-init
+      # <<: *airflow-common-depends-on
+      # redis:
+      #   condition: service_healthy
+      # postgres:
+      #   condition: service_healthy
+      # airflow-init:
+      #   condition: service_completed_successfully
 
   airflow-worker:
-    <<: *airflow-common
+    # <<: *airflow-common
+    image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.3.0}
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+    user: "${AIRFLOW_UID:-50000}:0"
     command: celery worker
     container_name: airflow-worker
     networks:
@@ -153,18 +207,53 @@ services:
       timeout: 10s
       retries: 5
     environment:
-      <<: *airflow-common-env
+      # <<: *airflow-common-env
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      # For backward compatibility, with Airflow <2.3
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
+      AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
+      AIRFLOW__CORE__FERNET_KEY: ''
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth'
+      _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
       # Required to handle warm shutdown of the celery workers properly
       # See https://airflow.apache.org/docs/docker-stack/entrypoint.html#signal-propagation
       DUMB_INIT_SETSID: "0"
     restart: always
     depends_on:
-      <<: *airflow-common-depends-on
-      airflow-init:
-        condition: service_completed_successfully
+      - redis
+      - postgres
+      - airflow-init
+      # <<: *airflow-common-depends-on
+      # redis:
+      #   condition: service_healthy
+      # postgres:
+      #   condition: service_healthy
+      # airflow-init:
+      #   condition: service_completed_successfully
 
   airflow-triggerer:
-    <<: *airflow-common
+    # <<: *airflow-common
+    image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.3.0}
+    environment:
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
+      AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
+      AIRFLOW__CORE__FERNET_KEY: ''
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth'
+      _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+    user: "${AIRFLOW_UID:-50000}:0"
     command: triggerer
     networks:
     - airflow_summit_network
@@ -176,12 +265,27 @@ services:
       retries: 5
     restart: always
     depends_on:
-      <<: *airflow-common-depends-on
-      airflow-init:
-        condition: service_completed_successfully
+      - redis
+      - postgres
+      - airflow-init
+      # <<: *airflow-common-depends-on
+      # redis:
+      #   condition: service_healthy
+      # postgres:
+      #   condition: service_healthy
+      # airflow-init:
+      #   condition: service_completed_successfully
 
   airflow-init:
-    <<: *airflow-common
+    # <<: *airflow-common
+    image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.3.0}
+    depends_on:
+      - redis
+      - postgres
+      # redis:
+      #   condition: service_healthy
+      # postgres:
+      #   condition: service_healthy
     entrypoint: /bin/bash
     networks:
     - airflow_summit_network
@@ -253,7 +357,18 @@ services:
         exec /entrypoint airflow version
     # yamllint enable rule:line-length
     environment:
-      <<: *airflow-common-env
+      # <<: *airflow-common-env
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      # For backward compatibility, with Airflow <2.3
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
+      AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
+      AIRFLOW__CORE__FERNET_KEY: ''
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth'
+      _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
       _AIRFLOW_DB_UPGRADE: 'true'
       _AIRFLOW_WWW_USER_CREATE: 'true'
       _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-airflow}
@@ -263,13 +378,37 @@ services:
       - .:/sources
 
   airflow-cli:
-    <<: *airflow-common
+    # <<: *airflow-common
+    image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.3.0}
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+    user: "${AIRFLOW_UID:-50000}:0"
+    depends_on:
+      - redis
+      - postgres
+      # redis:
+      #   condition: service_healthy
+      # postgres:
+      #   condition: service_healthy
     networks:
     - airflow_summit_network
-    profiles:
-      - debug
+    # profiles:
+    #   - debug
     environment:
-      <<: *airflow-common-env
+      # <<: *airflow-common-env
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      # For backward compatibility, with Airflow <2.3
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
+      AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
+      AIRFLOW__CORE__FERNET_KEY: ''
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth'
+      _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
       CONNECTION_CHECK_MAX_COUNT: "0"
     # Workaround for entrypoint issue. See: https://github.com/apache/airflow/issues/16252
     command:
@@ -278,7 +417,24 @@ services:
       - airflow
 
   flower:
-    <<: *airflow-common
+    # <<: *airflow-common
+    image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.3.0}
+    environment:
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
+      AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
+      AIRFLOW__CORE__FERNET_KEY: ''
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth'
+      _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+    user: "${AIRFLOW_UID:-50000}:0"
     command: celery flower
     networks:
     - airflow_summit_network
@@ -291,9 +447,16 @@ services:
       retries: 5
     restart: always
     depends_on:
-      <<: *airflow-common-depends-on
-      airflow-init:
-        condition: service_completed_successfully
+      - redis
+      - postgres
+      - airflow-init
+      # <<: *airflow-common-depends-on
+      # redis:
+      #   condition: service_healthy
+      # postgres:
+      #   condition: service_healthy
+      # airflow-init:
+      #   condition: service_completed_successfully
 
 volumes:
   postgres-db-volume:
