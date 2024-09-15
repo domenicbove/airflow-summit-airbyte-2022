@@ -10,6 +10,7 @@ RUN pip install --no-cache-dir apache-airflow-providers-airbyte
 RUN pip install psycopg2-binary --no-binary psycopg2-binary
 RUN pip install dbt-core
 RUN pip install dbt-postgres
+RUN pip install Flask
 
 USER root
 RUN mkdir -p -m 777 /opt/airflow/dbt

@@ -1,6 +1,8 @@
 #!/bin/bash
+set -e
+
 # expand alias
-docker login
+# docker login
 shopt -s expand_aliases
 
 # Install local requirements

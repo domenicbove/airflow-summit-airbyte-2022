@@ -20,16 +20,18 @@ This project configures a sample data stack orchestrated by Airflow, using Airby
 1.  Create `{HOME}/.octavia` and add the following credentials for using a local postgres database managed by Docker:
 
 ```
-POSTGRES_HOST=host.docker.internal
+echo "POSTGRES_HOST=host.docker.internal
 POSTGRES_PASSWORD=password
 POSTGRES_USERNAME=demo_user
-POSTGRES_DATABASE=postgres
+POSTGRES_DATABASE=postgres" > ~/.octavia
 ```
 
 2. Create the profile dbt in `{HOME}/.dbt/profiles.yaml`
 
 ```
-config:
+mkdir ~/.dbt
+
+echo "config:
   partial_parse: true
   printer_width: 120
   send_anonymous_usage_stats: false
@@ -45,7 +47,7 @@ normalize:
       threads: 8
       type: postgres
       user: demo_user
-  target: prod
+  target: prod" > ~/.dbt/profiles.yaml
 ```
 
 3. Run the whole data stack using `./tools/start.sh`. This will install local requirements (PyYAML) and run everything though Docker. The script will exit when complete, but the Docker containers will remain running.
